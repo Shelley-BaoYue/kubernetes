@@ -158,14 +158,4 @@ func TestDeletePods(t *testing.T) {
 		t.Fatalf("Run DeletePod() error, expected %d pods, got %d pods; ", len(expectedPods)-1, len(actualPods))
 	}
 
-	orphanedMirrorPodNames := podManager.GetOrphanedMirrorPodNames()
-	expectedOrphanedMirrorPodNameNum := 1
-	if len(orphanedMirrorPodNames) != expectedOrphanedMirrorPodNameNum {
-		t.Fatalf("Run getOrphanedMirrorPodNames() error, expected %d orphaned mirror pods, got %d orphaned mirror pods; ", expectedOrphanedMirrorPodNameNum, len(orphanedMirrorPodNames))
-	}
-
-	expectedOrphanedMirrorPodName := mirrorPod.Name + "_" + mirrorPod.Namespace
-	if orphanedMirrorPodNames[0] != expectedOrphanedMirrorPodName {
-		t.Fatalf("Run getOrphanedMirrorPodNames() error, expected orphaned mirror pod name : %s, got orphaned mirror pod name %s; ", expectedOrphanedMirrorPodName, orphanedMirrorPodNames[0])
-	}
 }

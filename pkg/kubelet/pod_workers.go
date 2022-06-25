@@ -78,8 +78,6 @@ type PodWorkers interface {
 
 // syncPodOptions provides the arguments to a SyncPod operation.
 type syncPodOptions struct {
-	// the mirror pod for the pod to sync, if it is a static pod
-	mirrorPod *v1.Pod
 	// pod to sync
 	pod *v1.Pod
 	// the type of update (create, update, sync)
@@ -172,7 +170,6 @@ func (p *podWorkers) managePodLoop(podUpdates <-chan UpdatePodOptions) {
 				return err
 			}
 			err = p.syncPodFn(syncPodOptions{
-				mirrorPod:      update.MirrorPod,
 				pod:            update.Pod,
 				podStatus:      status,
 				killPodOptions: update.KillPodOptions,

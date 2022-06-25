@@ -950,9 +950,6 @@ func (kl *Kubelet) removeOrphanedPodStatuses(pods []*v1.Pod, mirrorPods []*v1.Po
 	for _, pod := range pods {
 		podUIDs[pod.UID] = true
 	}
-	for _, pod := range mirrorPods {
-		podUIDs[pod.UID] = true
-	}
 	kl.statusManager.RemoveOrphanedStatuses(podUIDs)
 }
 
@@ -1270,9 +1267,6 @@ func (kl *Kubelet) GetKubeletContainerLogs(ctx context.Context, podFullName, con
 	}
 
 	podUID := pod.UID
-	if mirrorPod, ok := kl.podManager.GetMirrorPodByPod(pod); ok {
-		podUID = mirrorPod.UID
-	}
 	podStatus, found := kl.statusManager.GetPodStatus(podUID)
 	if !found {
 		// If there is no cached status, use the status from the

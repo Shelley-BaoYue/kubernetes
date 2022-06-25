@@ -142,8 +142,7 @@ func (sp SyncPodType) String() string {
 
 // IsMirrorPod returns true if the passed Pod is a Mirror Pod.
 func IsMirrorPod(pod *v1.Pod) bool {
-	_, ok := pod.Annotations[ConfigMirrorAnnotationKey]
-	return ok
+	return false
 }
 
 // IsStaticPod returns true if the pod is a static pod.

@@ -692,7 +692,7 @@ func NewMainKubelet(kubeCfg *kubeletconfiginternal.KubeletConfiguration,
 	klet.podKiller = NewPodKiller(klet)
 
 	// setup eviction manager
-	evictionManager, evictionAdmitHandler := eviction.NewManager(klet.resourceAnalyzer, evictionConfig, killPodNow(klet.podWorkers, kubeDeps.Recorder), klet.podManager.GetMirrorPodByPod, klet.imageManager, klet.containerGC, kubeDeps.Recorder, nodeRef, klet.clock)
+	evictionManager, evictionAdmitHandler := eviction.NewManager(klet.resourceAnalyzer, evictionConfig, killPodNow(klet.podWorkers, kubeDeps.Recorder), nil, klet.imageManager, klet.containerGC, kubeDeps.Recorder, nodeRef, klet.clock)
 
 	klet.evictionManager = evictionManager
 	klet.admitHandlers.AddPodAdmitHandler(evictionAdmitHandler)
@@ -1933,16 +1933,6 @@ func (kl *Kubelet) dispatchWork(pod *v1.Pod, syncType kubetypes.SyncPodType, mir
 	}
 }
 
-// TODO: handle mirror pods in a separate component (issue #17251)
-func (kl *Kubelet) handleMirrorPod(mirrorPod *v1.Pod, start time.Time) {
-	// Mirror pod ADD/UPDATE/DELETE operations are considered an UPDATE to the
-	// corresponding static pod. Send update to the pod worker if the static
-	// pod exists.
-	if pod, ok := kl.podManager.GetPodByMirrorPod(mirrorPod); ok {
-		kl.dispatchWork(pod, kubetypes.SyncPodUpdate, mirrorPod, start)
-	}
-}
-
 // HandlePodAdditions is the callback in SyncHandler for pods being added from
 // a config source.
 func (kl *Kubelet) HandlePodAdditions(pods []*v1.Pod) {
@@ -1970,8 +1960,7 @@ func (kl *Kubelet) HandlePodAdditions(pods []*v1.Pod) {
 				continue
 			}
 		}
-		mirrorPod, _ := kl.podManager.GetMirrorPodByPod(pod)
-		kl.dispatchWork(pod, kubetypes.SyncPodCreate, mirrorPod, start)
+		kl.dispatchWork(pod, kubetypes.SyncPodCreate, nil, start)
 		kl.probeManager.AddPod(pod)
 	}
 }
@@ -1982,8 +1971,7 @@ func (kl *Kubelet) HandlePodUpdates(pods []*v1.Pod) {
 	start := kl.clock.Now()
 	for _, pod := range pods {
 		kl.podManager.UpdatePod(pod)
-		mirrorPod, _ := kl.podManager.GetMirrorPodByPod(pod)
-		kl.dispatchWork(pod, kubetypes.SyncPodUpdate, mirrorPod, start)
+		kl.dispatchWork(pod, kubetypes.SyncPodUpdate, nil, start)
 	}
 }
 
@@ -2012,8 +2000,7 @@ func (kl *Kubelet) HandlePodReconcile(pods []*v1.Pod) {
 
 		// Reconcile Pod "Ready" condition if necessary. Trigger sync pod for reconciliation.
 		if status.NeedToReconcilePodReadiness(pod) {
-			mirrorPod, _ := kl.podManager.GetMirrorPodByPod(pod)
-			kl.dispatchWork(pod, kubetypes.SyncPodSync, mirrorPod, start)
+			kl.dispatchWork(pod, kubetypes.SyncPodSync, nil, start)
 		}
 
 		// After an evicted pod is synced, all dead containers in the pod can be removed.
@@ -2030,8 +2017,7 @@ func (kl *Kubelet) HandlePodReconcile(pods []*v1.Pod) {
 func (kl *Kubelet) HandlePodSyncs(pods []*v1.Pod) {
 	start := kl.clock.Now()
 	for _, pod := range pods {
-		mirrorPod, _ := kl.podManager.GetMirrorPodByPod(pod)
-		kl.dispatchWork(pod, kubetypes.SyncPodSync, mirrorPod, start)
+		kl.dispatchWork(pod, kubetypes.SyncPodSync, nil, start)
 	}
 }
 
