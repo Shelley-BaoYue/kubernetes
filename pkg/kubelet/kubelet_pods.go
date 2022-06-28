@@ -940,9 +940,6 @@ func (kl *Kubelet) removeOrphanedPodStatuses(pods []*v1.Pod, mirrorPods []*v1.Po
 	for _, pod := range pods {
 		podUIDs[pod.UID] = true
 	}
-	for _, pod := range mirrorPods {
-		podUIDs[pod.UID] = true
-	}
 	kl.statusManager.RemoveOrphanedStatuses(podUIDs)
 }
 
@@ -1103,9 +1100,8 @@ func (kl *Kubelet) HandlePodCleanups() error {
 			continue
 		}
 		start := kl.clock.Now()
-		mirrorPod, _ := kl.podManager.GetMirrorPodByPod(pod)
 		klog.V(3).InfoS("Pod is restartable after termination due to UID reuse", "pod", klog.KObj(pod), "podUID", pod.UID)
-		kl.dispatchWork(pod, kubetypes.SyncPodCreate, mirrorPod, start)
+		kl.dispatchWork(pod, kubetypes.SyncPodCreate, nil, start)
 		// TODO: move inside syncPod and make reentrant
 		// https://github.com/kubernetes/kubernetes/issues/105014
 		kl.probeManager.AddPod(pod)
@@ -1198,9 +1194,6 @@ func (kl *Kubelet) GetKubeletContainerLogs(ctx context.Context, podFullName, con
 	}
 
 	podUID := pod.UID
-	if mirrorPod, ok := kl.podManager.GetMirrorPodByPod(pod); ok {
-		podUID = mirrorPod.UID
-	}
 	podStatus, found := kl.statusManager.GetPodStatus(podUID)
 	if !found {
 		// If there is no cached status, use the status from the

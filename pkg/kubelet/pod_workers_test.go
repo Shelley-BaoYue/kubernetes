@@ -76,7 +76,7 @@ func (f *fakePodWorkers) UpdatePod(options UpdatePodOptions) {
 	case kubetypes.SyncPodKill:
 		f.triggeredDeletion = append(f.triggeredDeletion, uid)
 	default:
-		if err := f.syncPodFn(context.Background(), options.UpdateType, options.Pod, options.MirrorPod, status); err != nil {
+		if err := f.syncPodFn(context.Background(), options.UpdateType, options.Pod, status); err != nil {
 			f.t.Errorf("Unexpected error: %v", err)
 		}
 	}
