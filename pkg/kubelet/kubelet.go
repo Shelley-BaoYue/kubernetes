@@ -371,23 +371,6 @@ func NewMainKubelet(kubeCfg *kubeletconfiginternal.KubeletConfiguration,
 		LowThresholdPercent:  int(kubeCfg.ImageGCLowThresholdPercent),
 	}
 
-	enforceNodeAllocatable := kubeCfg.EnforceNodeAllocatable
-	if experimentalNodeAllocatableIgnoreEvictionThreshold {
-		// Do not provide kubeCfg.EnforceNodeAllocatable to eviction threshold parsing if we are not enforcing Evictions
-		enforceNodeAllocatable = []string{}
-	}
-	thresholds, err := eviction.ParseThresholdConfig(enforceNodeAllocatable, kubeCfg.EvictionHard, kubeCfg.EvictionSoft, kubeCfg.EvictionSoftGracePeriod, kubeCfg.EvictionMinimumReclaim)
-	if err != nil {
-		return nil, err
-	}
-	evictionConfig := eviction.Config{
-		PressureTransitionPeriod: kubeCfg.EvictionPressureTransitionPeriod.Duration,
-		MaxPodGracePeriodSeconds: int64(kubeCfg.EvictionMaxPodGracePeriod),
-		Thresholds:               thresholds,
-		KernelMemcgNotification:  kernelMemcgNotification,
-		PodCgroupRoot:            kubeDeps.ContainerManager.GetPodCgroupRoot(),
-	}
-
 	var serviceLister corelisters.ServiceLister
 	var serviceHasSynced cache.InformerSynced
 	serviceIndexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
@@ -709,11 +692,6 @@ func NewMainKubelet(kubeCfg *kubeletconfiginternal.KubeletConfiguration,
 
 	klet.backOff = flowcontrol.NewBackOff(backOffPeriod, MaxContainerBackOff)
 
-	// setup eviction manager
-	evictionManager, evictionAdmitHandler := eviction.NewManager(klet.resourceAnalyzer, evictionConfig, killPodNow(klet.podWorkers, kubeDeps.Recorder), nil, klet.imageManager, klet.containerGC, kubeDeps.Recorder, nodeRef, klet.clock)
-
-	klet.evictionManager = evictionManager
-	klet.admitHandlers.AddPodAdmitHandler(evictionAdmitHandler)
 
 	// Safe, whitelisted sysctls can always be used as unsafe sysctls in the spec.
 	// Hence, we concatenate those two lists.
@@ -1300,8 +1278,6 @@ func (kl *Kubelet) initializeRuntimeDependentModules() {
 		klog.ErrorS(err, "Failed to start ContainerManager")
 		os.Exit(1)
 	}
-	// eviction manager must start after cadvisor because it needs to know if the container runtime has a dedicated imagefs
-	kl.evictionManager.Start(kl.StatsProvider, kl.GetActivePods, kl.podResourcesAreReclaimed, evictionMonitoringPeriod)
 
 	// container log manager must start after container runtime is up to retrieve information from container runtime
 	// and inform container to reopen log file after log rotation.
