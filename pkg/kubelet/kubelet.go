@@ -1283,12 +1283,6 @@ func (kl *Kubelet) initializeRuntimeDependentModules() {
 	// Start the plugin manager
 	klog.V(4).InfoS("Starting plugin manager")
 	go kl.pluginManager.Run(kl.sourcesReady, wait.NeverStop)
-
-	err = kl.shutdownManager.Start()
-	if err != nil {
-		// The shutdown manager is not critical for kubelet, so log failure, but don't block Kubelet startup if there was a failure starting it.
-		klog.ErrorS(err, "Failed to start node shutdown manager")
-	}
 }
 
 // Run starts the kubelet reacting to config updates
